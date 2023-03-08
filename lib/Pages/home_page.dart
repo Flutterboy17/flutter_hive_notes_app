@@ -1,9 +1,11 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_hive_notes_app/Models/hive_models.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hive_flutter/adapters.dart';
-
+import 'package:velocity_x/velocity_x.dart';
 import '../Components/app_routes.dart';
 import '../Components/hive_boxes.dart';
 
@@ -15,15 +17,23 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  TextEditingController titleController = TextEditingController();
-  TextEditingController descriptionController = TextEditingController();
+  List<Color> myColors = [
+    Colors.yellow.shade100,
+    Colors.brown.shade100,
+    Colors.pink.shade100,
+    Colors.green.shade100,
+    Colors.deepPurple.shade100,
+    Colors.grey.shade100,
+    Colors.red.shade100,
+    Colors.deepOrange.shade100,
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         elevation: 0.5,
         title: Text("Recent Notes"),
-       
       ),
       floatingActionButton: FloatingActionButton.extended(
         label: Row(
@@ -41,32 +51,50 @@ class _HomePageState extends State<HomePage> {
           //  myFields(context);
         },
       ),
-
       body: ValueListenableBuilder<Box<HiveModels>>(
         valueListenable: HiveBoxes.getData().listenable(),
         builder: (context, value, child) {
           var data = value.values.toList().cast<HiveModels>();
-          return ListView.builder(
-            itemCount: data.length,
-            itemBuilder: (context, index) {
-              return ListTile(
-                leading: IconButton(
-                  onPressed: () {
-                    data[index].delete();
-                  },
-                  icon: Icon(Icons.delete),
-                ),
-                title: Text(data[index].title),
-                subtitle: Text(data[index].description),
-                trailing: IconButton(
-                  icon: Icon(Icons.edit),
-                  onPressed: () {
-                    editFields(data[index].title, data[index].description,
-                        data[index]);
-                  },
-                ),
-              );
-            },
+          Random random = Random();
+          Color bg = myColors[random.nextInt(7)];
+          return Padding(
+            padding: EdgeInsets.all(5),
+            child: ListView.builder(
+                itemCount: data.length,
+                itemBuilder: (context, index) {
+                  return Container(
+                    margin: EdgeInsets.symmetric(vertical: 5, horizontal: 5),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(5),
+                      color: bg,
+                    ),
+                    child: ListTile(
+                      contentPadding: EdgeInsets.only(
+                          right: 10, left: 10, top: 5, bottom: 5),
+                      onLongPress: () {
+                        data[index].delete().then((value) {
+                          Fluttertoast.showToast(msg: "Note deleted!");
+                        });
+                      },
+                      title: data[index]
+                          .title
+                          .text
+                          .fontWeight(FontWeight.w500)
+                          .overflow(TextOverflow.ellipsis)
+                          .maxLines(1)
+                          .minFontSize(20)
+                          .make(),
+                      subtitle:
+                          data[index].description.text.minFontSize(16).make(),
+                      trailing: GestureDetector(
+                          onTap: () {
+                            Navigator.of(context)
+                                .pushNamed(AppRoutes.addNotesRoute);
+                          },
+                          child: Icon(Icons.edit)),
+                    ),
+                  );
+                }),
           );
         },
       ),
@@ -75,129 +103,5 @@ class _HomePageState extends State<HomePage> {
 
   deleteData(HiveModels hiveModels) {
     hiveModels.delete();
-  }
-
-  Future<dynamic> editFields(
-      String title, String description, HiveModels hiveModels) {
-    titleController.text = title;
-    descriptionController.text = description;
-
-    return showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text("Add Notes"),
-          actions: [
-            TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: Text("CANCEL")),
-            TextButton(
-                onPressed: () async {
-                  hiveModels.title = titleController.text;
-                  hiveModels.description = descriptionController.text;
-
-                  await hiveModels.save();
-
-                  titleController.clear();
-                  descriptionController.clear();
-                  Navigator.pop(context);
-                },
-                style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.all(Colors.blue)),
-                child: Text(
-                  "EDIT",
-                  style: TextStyle(color: Colors.white),
-                ))
-          ],
-          content: SingleChildScrollView(
-            child: Column(
-              children: [
-                TextField(
-                  controller: titleController,
-                  decoration: InputDecoration(
-                      enabledBorder: OutlineInputBorder(),
-                      focusedBorder: OutlineInputBorder(),
-                      hintText: 'Enter title...'),
-                ),
-                SizedBox(
-                  height: 20,
-                ),
-                TextField(
-                  controller: descriptionController,
-                  decoration: InputDecoration(
-                      enabledBorder: OutlineInputBorder(),
-                      focusedBorder: OutlineInputBorder(),
-                      hintText: 'Enter description...'),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<dynamic> myFields(BuildContext context) {
-    return showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text("Add Notes"),
-          actions: [
-            TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: Text("CANCEL")),
-            TextButton(
-                onPressed: () {
-                  final data = HiveModels(
-                      title: titleController.text,
-                      description: descriptionController.text);
-
-                  var box = HiveBoxes.getData();
-                  box.add(data);
-
-                  data.save();
-
-                  titleController.clear();
-                  descriptionController.clear();
-                  Navigator.pop(context);
-                },
-                style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.all(Colors.blue)),
-                child: Text(
-                  "ADD",
-                  style: TextStyle(color: Colors.white),
-                ))
-          ],
-          content: SingleChildScrollView(
-            child: Column(
-              children: [
-                TextField(
-                  controller: titleController,
-                  decoration: InputDecoration(
-                      enabledBorder: OutlineInputBorder(),
-                      focusedBorder: OutlineInputBorder(),
-                      hintText: 'Enter title...'),
-                ),
-                SizedBox(
-                  height: 20,
-                ),
-                TextField(
-                  controller: descriptionController,
-                  decoration: InputDecoration(
-                      enabledBorder: OutlineInputBorder(),
-                      focusedBorder: OutlineInputBorder(),
-                      hintText: 'Enter description...'),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
   }
 }

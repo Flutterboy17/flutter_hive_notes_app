@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hive_notes_app/Models/hive_models.dart';
 import 'package:hive_flutter/adapters.dart';
 
+import '../Components/app_routes.dart';
 import '../Components/hive_boxes.dart';
 
 class HomePage extends StatefulWidget {
@@ -19,12 +20,28 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          myFields(context);
-        },
-        child: Icon(Icons.add),
+      appBar: AppBar(
+        elevation: 0.5,
+        title: Text("Recent Notes"),
+       
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        label: Row(
+          children: const [
+            Text("Add Notes"),
+            SizedBox(
+              width: 10,
+            ),
+            Icon(Icons.post_add)
+          ],
+        ),
+        onPressed: () {
+          Navigator.of(context).pushNamed(AppRoutes.addNotesRoute);
+
+          //  myFields(context);
+        },
+      ),
+
       body: ValueListenableBuilder<Box<HiveModels>>(
         valueListenable: HiveBoxes.getData().listenable(),
         builder: (context, value, child) {
@@ -62,10 +79,9 @@ class _HomePageState extends State<HomePage> {
 
   Future<dynamic> editFields(
       String title, String description, HiveModels hiveModels) {
-
-    
     titleController.text = title;
     descriptionController.text = description;
+
     return showDialog(
       context: context,
       builder: (context) {
@@ -84,7 +100,6 @@ class _HomePageState extends State<HomePage> {
 
                   await hiveModels.save();
 
-               
                   titleController.clear();
                   descriptionController.clear();
                   Navigator.pop(context);
@@ -138,17 +153,15 @@ class _HomePageState extends State<HomePage> {
                 child: Text("CANCEL")),
             TextButton(
                 onPressed: () {
-             
                   final data = HiveModels(
                       title: titleController.text,
                       description: descriptionController.text);
 
                   var box = HiveBoxes.getData();
                   box.add(data);
-            
+
                   data.save();
 
-          
                   titleController.clear();
                   descriptionController.clear();
                   Navigator.pop(context);
